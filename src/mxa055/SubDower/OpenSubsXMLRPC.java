@@ -5,8 +5,10 @@ package mxa055.SubDower;
 
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Hashtable;
+import java.util.List;
 
 import org.apache.xmlrpc.XmlRpcException;
 import org.apache.xmlrpc.client.*; 
@@ -15,7 +17,18 @@ import org.junit.Assert;
 import sun.security.util.Debug;
 
 public class OpenSubsXMLRPC {
+	
+	public class subInfo
+	{
+	    public String sublanguageid;
+	    public String moviehash;
+	    public String moviebytesize;
+	    public String imdbid;
+	}
+	
 	private XmlRpcClient server;
+	private String Token;
+	
 	public OpenSubsXMLRPC() throws MalformedURLException
 	{
 		XmlRpcClientConfigImpl config = new XmlRpcClientConfigImpl();  
@@ -60,4 +73,43 @@ public class OpenSubsXMLRPC {
 		Debug.println("Client download quota", String.valueOf((int) downloadLimits.get("client_download_quota")));
 		Debug.println("Client 24 Hour download limit", String.valueOf((int) downloadLimits.get("client_24h_download_limit")));		  
 	}
+	
+	public void Login() throws XmlRpcException
+	{
+		Object[] params = new Object[4];
+		params[0] = ""; //username
+		params[1] = ""; //password
+		params[2] = "en"; //language
+		params[3] = "OS Test User Agent"; //user agent
+ 		HashMap<String,Object> response = (HashMap<String, Object>) server.execute("LogIn", params);
+		String statusCode = (String)response.get("status");
+		Assert.assertNotSame("200", statusCode);
+		Token = (String)response.get("token");
+	}	
+	
+	public void LogOut() throws XmlRpcException
+	{
+		Object[] params = new Object[0];
+		server.execute("LogOut",params);
+	}
+	
+	public void KeepAlive() throws XmlRpcException
+	{
+		Object[] params = new Object[0];
+		server.execute("NoOperation",params);
+	}
+	
+	public void SearchSubtitles(String movieHash) throws XmlRpcException
+	{
+		List<subInfo> infoList = new ArrayList<>();
+		subInfo info = new subInfo();
+		info.moviehash = movieHash;
+		info.sublanguageid = "en";
+		infoList.add(info);
+		Object[] params = new Object[1];
+		params[0] = infoList.toArray();
+		HashMap<String,Object> result =  (HashMap<String, Object>) server.execute("SearchSubtitles",params);
+		Assert.assertNotNull(result);
+	}
+	
 }
